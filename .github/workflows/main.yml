@@ -89,7 +89,7 @@ jobs:
         run: |
           .\bridge-cli-bundle-win64\bridge-cli.exe --stage polaris `
             polaris.serverUrl=$env:POLARIS_SERVER_URL `
-            polaris.accessToken=$env:POLARIS_ACCESS_TOKEN `
+            polaris.accessToken=$env:POLARIS_ACCESS_TOKEN_NEW `
             polaris.application.name=PIFSS-Demo `
             polaris.project.name=pifss-vb-demo `
             polaris.branch.name=${{ github.ref_name }} `
