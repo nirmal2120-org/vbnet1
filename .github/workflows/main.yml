@@ -82,14 +82,13 @@ jobs:
       # Run Polaris SAST (build capture) + SCA
       # --------------------------------------------------
       - name: Polaris SAST + SCA
-        shell: pwsh
         env:
           POLARIS_SERVER_URL: ${{ vars.POLARIS_SERVER_URL }}
           POLARIS_ACCESS_TOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN_NEW }}
         run: |
           .\bridge-cli-bundle-win64\bridge-cli.exe --stage polaris `
-            polaris.serverUrl=$env:POLARIS_SERVER_URL `
-            polaris.accessToken=$env:POLARIS_ACCESS_TOKEN `
+            polaris.serverUrl=$POLARIS_SERVER_URL \
+            polaris.accessToken=$POLARIS_ACCESS_TOKEN \
             polaris.application.name=PIFSS-Demo `
             polaris.project.name=pifss-vb-demo `
             polaris.branch.name=${{ github.ref_name }} `
