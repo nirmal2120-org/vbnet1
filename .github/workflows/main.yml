@@ -5,10 +5,6 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
-env:
-  POLARIS_SERVER_URL: ${{ vars.POLARIS_SERVER_URL }}
-  POLARIS_ACCESS_TOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN_NEW }}
-
 jobs:
   polaris:
     runs-on: windows-latest
@@ -19,17 +15,6 @@ jobs:
       # --------------------------------------------------
       - name: Checkout
         uses: actions/checkout@v4
-
-      # --------------------------------------------------
-      # Check Polaris values are available
-      # --------------------------------------------------
-      - name: Check Polaris settings
-        shell: pwsh
-        run: |
-          Write-Host "Server URL: '$env:POLARIS_SERVER_URL'"
-          Write-Host "Token length: $($env:POLARIS_ACCESS_TOKEN.Length)"
-          if (-not $env:POLARIS_SERVER_URL) { Write-Error "POLARIS_SERVER_URL variable is empty"; exit 1 }
-          if (-not $env:POLARIS_ACCESS_TOKEN) { Write-Error "POLARIS_ACCESS_TOKEN_NEW secret is empty"; exit 1 }
 
       # --------------------------------------------------
       # List files and auto-detect the solution / project
@@ -98,6 +83,9 @@ jobs:
       # --------------------------------------------------
       - name: Polaris SAST + SCA
         shell: pwsh
+        env:
+          POLARIS_SERVER_URL: ${{ vars.POLARIS_SERVER_URL }}
+          POLARIS_ACCESS_TOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN_NEW }}
         run: |
           .\bridge-cli-bundle-win64\bridge-cli.exe --stage polaris `
             polaris.serverUrl=$env:POLARIS_SERVER_URL `
