@@ -1,0 +1,93 @@
+name: Polaris VB Scan - PIFSS Demo
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+env:
+  SLN_PATH: "Modern Calculator/Calculator.sln"   # update to the actual .sln path in your repo
+
+jobs:
+  polaris:
+    runs-on: windows-latest
+
+    steps:
+      # --------------------------------------------------
+      # Checkout source code
+      # --------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------
+      # Setup MSBuild and NuGet (for VB / .NET Framework build)
+      # --------------------------------------------------
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      # --------------------------------------------------
+      # Setup Java 17 (required for SCA / Detect)
+      # --------------------------------------------------
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # --------------------------------------------------
+      # Restore NuGet packages
+      # --------------------------------------------------
+      - name: Restore packages
+        shell: pwsh
+        run: nuget restore "$env:SLN_PATH"
+
+      # --------------------------------------------------
+      # Verify the build works before scanning
+      # --------------------------------------------------
+      - name: Verify build
+        shell: pwsh
+        run: msbuild "$env:SLN_PATH" -t:Rebuild -p:Configuration=Release
+
+      # --------------------------------------------------
+      # Download Black Duck Bridge CLI (Windows)
+      # --------------------------------------------------
+      - name: Download Bridge CLI
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest/bridge-cli-bundle-win64.zip" -OutFile bridge.zip
+          Expand-Archive bridge.zip -DestinationPath . -Force
+          .\bridge-cli-bundle-win64\bridge-cli.exe --version
+
+      # --------------------------------------------------
+      # Run Polaris SAST (build capture) + SCA
+      # --------------------------------------------------
+      - name: Polaris SAST + SCA
+        shell: pwsh
+        env:
+          POLARIS_SERVER_URL: ${{ vars.POLARIS_SERVER_URL }}
+          POLARIS_ACCESS_TOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
+        run: |
+          .\bridge-cli-bundle-win64\bridge-cli.exe --stage polaris `
+            polaris.serverUrl=$env:POLARIS_SERVER_URL `
+            polaris.accessToken=$env:POLARIS_ACCESS_TOKEN `
+            polaris.application.name=PIFSS-Demo `
+            polaris.project.name=pifss-vb-demo `
+            polaris.branch.name=${{ github.ref_name }} `
+            polaris.assessment.types=SAST,SCA `
+            polaris.test.sca.type=SCA-PACKAGE,SCA-SIGNATURE `
+            "coverity.clean.command=msbuild `"$env:SLN_PATH`" -t:Clean" `
+            "coverity.build.command=msbuild `"$env:SLN_PATH`" -t:Rebuild -p:Configuration=Release" `
+            "detect.args=--detect.detector.search.depth=3"
+
+      # --------------------------------------------------
+      # Upload Bridge logs if the scan fails
+      # --------------------------------------------------
+      - name: Upload Bridge logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bridge-logs
+          path: .bridge/
