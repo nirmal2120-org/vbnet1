@@ -88,34 +88,6 @@ jobs:
           POLARIS_ACCESS_TOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN_NEW }}
         run: |
           .\bridge-cli-bundle-win64\bridge-cli.exe --stage polaris `
-            polaris.serverUrl=$POLARIS_SERVER_URL \
-            polaris.accessToken=$POLARIS_ACCESS_TOKEN \
-            polaris.application.name=PIFSS-Demo `
-            polaris.project.name=pifss-vb-demo `
-            polaris.branch.name=${{ github.ref_name }} `
-            polaris.assessment.types=SAST,SCA `
-            polaris.test.sca.type=SCA-PACKAGE,SCA-SIGNATURE `
-            "coverity.clean.command=msbuild `"$env:SLN_PATH`" -t:Clean" `
-            "coverity.build.command=msbuild `"$env:SLN_PATH`" -t:Rebuild -p:Configuration=Release" `
-            "detect.args=--detect.detector.search.depth=3"
-
-      # --------------------------------------------------
-      # Upload Bridge logs if the scan fails
-      # --------------------------------------------------
-      - name: Upload Bridge logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bridge-logs
-          path: .bridge/      # Run Polaris SAST (build capture) + SCA
-      # --------------------------------------------------
-      - name: Polaris SAST + SCA
-        shell: pwsh
-        env:
-          POLARIS_SERVER_URL: ${{ vars.POLARIS_SERVER_URL }}
-          POLARIS_ACCESS_TOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
-        run: |
-          .\bridge-cli-bundle-win64\bridge-cli.exe --stage polaris `
             polaris.serverUrl=$env:POLARIS_SERVER_URL `
             polaris.accessToken=$env:POLARIS_ACCESS_TOKEN `
             polaris.application.name=PIFSS-Demo `
